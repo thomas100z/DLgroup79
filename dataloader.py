@@ -30,3 +30,7 @@ def get_data() -> tuple[Dataset, Dataset]:
     subjects_dataset = tio.SubjectsDataset(subjects_list, transform=transform)
 
     return subjects_dataset, subjects_dataset
+
+
+if __name__ == "__main__":
+    get_data()
