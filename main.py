@@ -2,9 +2,11 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from dataloader import get_data
 from model import OrganNet
+from loss import *
 import torch
 
 EPOCH = 1000
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # get the data from the dataloader
 training_data, test_data = get_data()
@@ -18,15 +20,25 @@ net = OrganNet()
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 
 # focal loss + dice loss
-loss = None
+focal_loss = None
 losses = []
 val_losses = []
 
 # train model on train set
 for epoch in range(EPOCH):
+    running_loss = 0.0
 
-    for train_sample in train_dataloader:
-        pass
+    for i, data in enumerate(train_dataloader):
+        inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
+        optimizer.zero_grad()
+        outputs = net(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+
+    losses.append(running_loss)
+    print(f"[EPOCH {epoch}] loss: {running_loss}")
 
 
 
