@@ -3,6 +3,9 @@ import torch.optim as optim
 from organnet.dataloader import get_data
 from organnet.model import OrganNet
 from datetime import datetime
+from organnet.loss import *
+from organnet.diceLoss import *
+from organnet.focalLoss import *
 import torch
 
 EPOCH = 1000
@@ -21,7 +24,7 @@ net.to(DEVICE)
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 
 # focal loss + dice loss
-criterion = None
+criterion = FocalLoss()
 losses = []
 val_losses = []
 
@@ -31,11 +34,11 @@ for epoch in range(EPOCH):
 
     for i, data in enumerate(train_dataloader):
         inputs, labels = data['t1']['data'].to(DEVICE), data['label']['data'].to(DEVICE)
-
-        print(inputs, labels)
         optimizer.zero_grad()
         outputs = net(inputs)
-        loss = criterion(outputs, labels)
+        print(outputs.shape, labels.shape)
+        loss = criterion(outputs.float(), labels.float())
+
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
@@ -49,7 +52,7 @@ print('Finished Training')
 
 now = datetime.now()
 
-PATH = './models/' + now.strftime("%d-%H:%M") +  "OrganNet.pth"
+PATH = './models/' + now.strftime("%d-%H:%M") + "OrganNet.pth"
 torch.save(net.state_dict(), PATH)
 
 print("Model saved")
@@ -58,4 +61,6 @@ print("-------------------------------------------------------")
 # evaluate the model on the test set
 with torch.no_grad():
     for test_sample in test_dataloader:
-        pass
+        inputs, labels = test_sample['t1']['data'].to(DEVICE), test_sample['label']['data'].to(DEVICE)
+
+        print(f'input:{inputs.shape}\tlabel:{labels.shape}')
