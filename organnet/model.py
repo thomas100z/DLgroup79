@@ -9,8 +9,29 @@ vgg = models.vgg16()
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-class ConvResu2():
-    pass
+class ConvResu2(nn.Module):
+    def __init__(self, channel_in: int, channel_out: int):
+        super().__init__()
+
+        half_out = int((channel_out - channel_in) / 2)
+
+        self.conv_block = nn.Sequential(
+            nn.Conv3d(channel_in, half_out, kernel_size=(3, 3, 3)),
+            nn.ReLU(),
+            nn.BatchNorm3d(half_out),
+            nn.Conv3d(half_out, channel_out, kernel_size=(3, 3, 3)),
+            nn.ReLU()
+        )
+        self.pool_dense = nn.Sequential(
+            nn.AvgPool3d((1, 2, 2)),
+            nn.Linear(1, 1), #TODO
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x1 = self.conv_block(x)
+        x2 = self.pool_dense(x1)
+        return x1 * x2 + x1 # TODO
 
 
 class OrganNet(nn.Module):
@@ -19,20 +40,47 @@ class OrganNet(nn.Module):
         super().__init__()
         self.SHAPE = __name__ == "__main__"
 
-        self.conv1 = nn.Conv3d(1, 8, kernel_size=(1, 3, 3))
-        self.conv2 = nn.Conv3d(8, 16, kernel_size=(1, 3, 3))
+        # 2xConv 1,3,3 : green arrows
+        self.conv3d2_1 = nn.Sequential(
+            nn.Conv3d(1, 8, kernel_size=(1, 3, 3)),
+            nn.Conv3d(8, 16, kernel_size=(1, 3, 3))
+        )
+        self.conv3d2_2 = nn.Sequential(
+            nn.Conv3d(32, 32, kernel_size=(1, 3, 3)),
+            nn.Conv3d(32, 32, kernel_size=(1, 3, 3))
+        )
 
+        # pool and transpose layers : white arrows
         self.pool1 = nn.MaxPool3d((1, 2, 2))
+        self.pool2 = nn.MaxPool3d((2, 2, 2))
+        self.transpose = nn.ConvTranspose3d(64, 32, (2, 2, 2))
+        self.transpose = nn.ConvTranspose3d(32, 16, (1, 2, 2))
+
+        # 2xConv 3,3,3 Resu
+        self.convresu2_1 = ConvResu2(16, 32)
+        self.convresu2_2 = ConvResu2(32, 64)
+        self.convresu2_3 = ConvResu2(128, 64)
+        self.convresu2_3 = ConvResu2(64, 32)
+
+        # Conv 1 kernel
+        self.con1_1 = nn.Conv3d(256, 128, kernel_size=(1, 1, 1))
+        self.conv1_2 = nn.Conv3d(128, 64, kernel_size=(1, 1, 1))
+        self.conv1_3 = nn.Conv3d(32, 25, kernel_size=(1, 1, 1))
 
     def forward(self, x):
+
+        x = self.conv3d2_1(x)
+
         if self.SHAPE: print(x.shape)
-        x = self.conv1(x)
-        if self.SHAPE: print(x.shape)
-        x = self.conv2(x)
-        blue_concat = x
-        if self.SHAPE: print(x.shape)
+
         x = self.pool1(x)
+
         if self.SHAPE: print(x.shape)
+
+        x = self.convresu2_1(x)
+
+
+
 
         return x
 
@@ -56,8 +104,7 @@ if __name__ == "__main__":
     net = OrganNet()
 
     input_tensor = torch.rand((2, 1, 256, 256, 48))
-    SHAPE = __name__ == "__main__"
-
     output = net(input_tensor)
+
     print("----------------------------------------------------------------")
     summary(net, (1, 256, 256, 48))
