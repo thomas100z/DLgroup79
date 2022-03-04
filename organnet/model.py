@@ -5,7 +5,6 @@ import numpy as np
 from torchvision import models
 from torchsummary import summary
 
-vgg = models.vgg16()
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
@@ -13,7 +12,7 @@ class ConvResu2(nn.Module):
     def __init__(self, channel_in: int, channel_out: int):
         super().__init__()
 
-        half_out = int((channel_out - channel_in) / 2)
+        half_out = channel_in + (int((channel_out - channel_in )/ 2))
 
         self.conv_block = nn.Sequential(
             nn.Conv3d(channel_in, half_out, kernel_size=(3, 3, 3)),
@@ -22,16 +21,20 @@ class ConvResu2(nn.Module):
             nn.Conv3d(half_out, channel_out, kernel_size=(3, 3, 3)),
             nn.ReLU()
         )
+
         self.pool_dense = nn.Sequential(
             nn.AvgPool3d((1, 2, 2)),
-            nn.Linear(1, 1), #TODO
+            nn.Linear(1, 1),  # TODO
+            nn.Linear(1, 1),  # TODO
             nn.Sigmoid()
         )
 
     def forward(self, x):
         x1 = self.conv_block(x)
+        print(x1.shape)
         x2 = self.pool_dense(x1)
-        return x1 * x2 + x1 # TODO
+        print(x2.shape)
+        return torch.add(torch.mul(x1, x2),x1)  # TODO
 
 
 class OrganNet(nn.Module):
@@ -79,9 +82,6 @@ class OrganNet(nn.Module):
 
         x = self.convresu2_1(x)
 
-
-
-
         return x
 
     def save_checkpoint(self, optimizer, filename="my_checkpoint.pth"):
@@ -101,10 +101,14 @@ class OrganNet(nn.Module):
 
 
 if __name__ == "__main__":
-    net = OrganNet()
+    # net = OrganNet()
+    block = ConvResu2(16, 32)
 
-    input_tensor = torch.rand((2, 1, 256, 256, 48))
-    output = net(input_tensor)
+    input_block = torch.rand((2, 16, 256, 256, 48))
+    output_block = block(input_block)
 
-    print("----------------------------------------------------------------")
-    summary(net, (1, 256, 256, 48))
+    # input_tensor = torch.rand((2, 1, 256, 256, 48))
+    # output = net(input_tensor)
+    #
+    # print("----------------------------------------------------------------")
+    # summary(net, (1, 256, 256, 48))
