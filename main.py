@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from organnet.dataloader import get_data
+from organnet.focalLoss2 import FocalLoss2
 from organnet.model import OrganNet
 from datetime import datetime
 from organnet.loss import *
@@ -24,7 +25,8 @@ net.to(DEVICE)
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 
 # focal loss + dice loss
-criterion = FocalLoss()
+criterion_focal = FocalLoss2()
+criterion_dice = DiceLoss()
 losses = []
 val_losses = []
 
@@ -35,10 +37,12 @@ for epoch in range(EPOCH):
     for i, data in enumerate(train_dataloader):
         inputs, labels = data['t1']['data'].to(DEVICE), data['label']['data'].to(DEVICE)
         optimizer.zero_grad()
-        outputs = net(inputs)
+        outputs = inputs
         print(outputs.shape, labels.shape)
-        loss = criterion(outputs.float(), labels.float())
+        loss_dice = criterion_dice(outputs.float(), labels.float())
+        loss_focal = criterion_focal(outputs.float(), labels.float())
 
+        loss = loss_dice + loss_focal
         loss.backward()
         optimizer.step()
         running_loss += loss.item()

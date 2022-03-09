@@ -7,7 +7,7 @@ transforms = [
 ]
 
 
-def get_data() -> tuple[Dataset, Dataset]:
+def get_data() -> tuple:
     subjects_list = []
     subjects_dataset = {}
 
