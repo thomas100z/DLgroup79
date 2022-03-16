@@ -10,7 +10,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class ConvResu2(nn.Module):
-    def __init__(self, channel_in: int, channel_out: int, HDC: bool) -> None:
+    def __init__(self, channel_in: int, channel_out: int, HDC: bool, depth: int) -> None:
         super().__init__()
 
         half_out = channel_in + (int((channel_out - channel_in) / 2))
@@ -24,20 +24,23 @@ class ConvResu2(nn.Module):
                 nn.ReLU(),
             )
 
+            target_shape = (1, 1, depth - 4)
+            target_flatten = target_shape[0] * target_shape[1] * target_shape[2] * channel_out
+
+
         else:
             self.conv_block = nn.Sequential(
                 nn.Conv3d(channel_in, channel_out, kernel_size=(3, 3, 3), dilation=(3, 3, 3), padding='valid'),
                 nn.ReLU(),
             )
-
-        target_shape = (1, 1, 44)
-        target_flatten = target_shape[0] * target_shape[1] * target_shape[2]
+            target_shape = (1, 1, depth - 2)
+            target_flatten = target_shape[0] * target_shape[1] * target_shape[2] * channel_out
 
         self.pool_dense = nn.Sequential(
             nn.AdaptiveAvgPool3d(target_shape),
             nn.Flatten(),
-            # nn.Linear(target_flatten, target_flatten),
-            # nn.ReLU(),
+            nn.Linear(target_flatten, target_flatten),
+            nn.ReLU(),
             # nn.Linear(target_flatten, target_flatten),
             # nn.Sigmoid()
         )
@@ -49,7 +52,7 @@ class ConvResu2(nn.Module):
         # print(x2.shape)
         # torch.reshape(x2, (5, 5, 5))
         # print(x2.shape)
-        return  x2 #torch.add(torch.mul(x1, x2), x1)  # TODO
+        return x2  # torch.add(torch.mul(x1, x2), x1)  # TODO
 
 
 class OrganNet(nn.Module):
@@ -160,9 +163,9 @@ if __name__ == "__main__":
     # y = torch.mul(input_block, torch.rand(1, 1, 48))
     #
     # print('')
-    net = ConvResu2(16, 32 ,False)
-    summary(net, (16, 25, 25, 48))
-
+    z = 100
+    net = ConvResu2(16, 32, False, z)
+    summary(net, (16, 25, 25, z))
 
     # input_tensor = torch.rand((2, 1, 256, 256, 48))
     # output = net(input_tensor)
