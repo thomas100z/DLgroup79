@@ -17,35 +17,39 @@ class ConvResu2(nn.Module):
 
         if not HDC:
             self.conv_block = nn.Sequential(
-                nn.Conv3d(channel_in, half_out, kernel_size=(3, 3, 3)),
+                nn.Conv3d(channel_in, half_out, kernel_size=(3, 3, 3), padding='valid'),
                 nn.ReLU(),
                 nn.BatchNorm3d(half_out),
-                nn.Conv3d(half_out, channel_out, kernel_size=(3, 3, 3)),
+                nn.Conv3d(half_out, channel_out, kernel_size=(3, 3, 3), padding='valid'),
                 nn.ReLU(),
             )
+
         else:
             self.conv_block = nn.Sequential(
-                nn.Conv3d(channel_in, channel_out, kernel_size=(3, 3, 3), dilation=(3, 3, 3)),
+                nn.Conv3d(channel_in, channel_out, kernel_size=(3, 3, 3), dilation=(3, 3, 3), padding='valid'),
                 nn.ReLU(),
             )
 
-        self.pool_dense = nn.Sequential(
-            nn.AvgPool3d((1, 2, 2)),
-            nn.Flatten(),
-            nn.Linear(channel_out, channel_out),
-            nn.Linear(channel_out, channel_out),
-            nn.Sigmoid()
+        target_shape = (1, 1, 44)
+        target_flatten = target_shape[0] * target_shape[1] * target_shape[2]
 
+        self.pool_dense = nn.Sequential(
+            nn.AdaptiveAvgPool3d(target_shape),
+            nn.Flatten(),
+            # nn.Linear(target_flatten, target_flatten),
+            # nn.ReLU(),
+            # nn.Linear(target_flatten, target_flatten),
+            # nn.Sigmoid()
         )
 
     def forward(self, x):
         x1 = self.conv_block(x)
         print(x1.shape)
         x2 = self.pool_dense(x1)
-        print(x2.shape)
-        torch.reshape(x2, (5, 5, 5))
-        print(x2.shape)
-        return torch.add(torch.mul(x1, x2), x1)  # TODO
+        # print(x2.shape)
+        # torch.reshape(x2, (5, 5, 5))
+        # print(x2.shape)
+        return  x2 #torch.add(torch.mul(x1, x2), x1)  # TODO
 
 
 class OrganNet(nn.Module):
@@ -56,12 +60,12 @@ class OrganNet(nn.Module):
 
         # 2xConv 1,3,3 : green arrows
         self.conv3d2_1 = nn.Sequential(
-            nn.Conv3d(1, 8, kernel_size=(1, 3, 3)),
-            nn.Conv3d(8, 16, kernel_size=(1, 3, 3))
+            nn.Conv3d(1, 8, kernel_size=(1, 3, 3), padding='valid'),
+            nn.Conv3d(8, 16, kernel_size=(1, 3, 3), padding='valid')
         )
         self.conv3d2_2 = nn.Sequential(
-            nn.Conv3d(32, 32, kernel_size=(1, 3, 3)),
-            nn.Conv3d(32, 32, kernel_size=(1, 3, 3))
+            nn.Conv3d(32, 32, kernel_size=(1, 3, 3), padding='valid'),
+            nn.Conv3d(32, 32, kernel_size=(1, 3, 3), padding='valid')
         )
 
         # pool and transpose layers : white arrows
@@ -77,9 +81,9 @@ class OrganNet(nn.Module):
         self.convresu2_3 = ConvResu2(64, 32, False)
 
         # Conv 1 kernel
-        self.conv1_1 = nn.Conv3d(256, 128, kernel_size=(1, 1, 1))
-        self.conv1_2 = nn.Conv3d(128, 64, kernel_size=(1, 1, 1))
-        self.conv1_3 = nn.Conv3d(32, 25, kernel_size=(1, 1, 1))
+        self.conv1_1 = nn.Conv3d(256, 128, kernel_size=(1, 1, 1), padding='valid')
+        self.conv1_2 = nn.Conv3d(128, 64, kernel_size=(1, 1, 1), padding='valid')
+        self.conv1_3 = nn.Conv3d(32, 25, kernel_size=(1, 1, 1), padding='valid')
 
         # HDC kernel
         self.hdc_1 = ConvResu2(64, 128, True)
@@ -147,12 +151,18 @@ class OrganNet(nn.Module):
 
 if __name__ == "__main__":
     # net = OrganNet()
-    # block = ConvResu2(1, 32, (256, 256, 48))
     #
-    input_block = torch.rand((2, 1, 256, 256, 48))
+    #
+    # input_block = torch.ones((2, 1, 256, 256, 48))
+    #
+    # output_block = net(input_block)
+    #
+    # y = torch.mul(input_block, torch.rand(1, 1, 48))
+    #
+    # print('')
+    net = ConvResu2(16, 32 ,False)
+    summary(net, (16, 25, 25, 48))
 
-    #
-    # output_block = block(input_block)
 
     # input_tensor = torch.rand((2, 1, 256, 256, 48))
     # output = net(input_tensor)
