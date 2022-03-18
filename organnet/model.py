@@ -1,8 +1,5 @@
 import torch.nn as nn
-import torch.nn.functional as F
 import torch
-import numpy as np
-from torchvision import models
 from torchsummary import summary
 import os
 
@@ -15,19 +12,19 @@ class ConvResu2(nn.Module):
 
         self.channel_out = channel_out
         half_out = channel_in + (int((channel_out - channel_in) / 2))
-
+        self.h = half_out
         if not HDC:
             self.conv_block = nn.Sequential(
-                nn.Conv3d(channel_in, half_out, kernel_size=(3, 3, 3), padding='valid'),
+                nn.Conv3d(channel_in, half_out, kernel_size=(3, 3, 3), padding='same'),
                 nn.ReLU(),
                 nn.BatchNorm3d(half_out),
-                nn.Conv3d(half_out, channel_out, kernel_size=(3, 3, 3), padding='valid'),
+                nn.Conv3d(half_out, channel_out, kernel_size=(3, 3, 3), padding='same'),
                 nn.ReLU(),
             )
 
         else:
             self.conv_block = nn.Sequential(
-                nn.Conv3d(channel_in, channel_out, kernel_size=(3, 3, 3), dilation=(3, 3, 3), padding='valid'),
+                nn.Conv3d(channel_in, channel_out, kernel_size=(3, 3, 3), dilation=(3, 3, 3), padding='same'),
                 nn.ReLU(),
             )
 
@@ -52,94 +49,77 @@ class ConvResu2(nn.Module):
 
 class OrganNet(nn.Module):
 
-    def __init__(self, depth: int) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.SHAPE = __name__ == "__main__"
 
         # 2xConv 1,3,3 : green arrows
         self.conv3d2_1 = nn.Sequential(
-            nn.Conv3d(1, 8, kernel_size=(1, 3, 3), padding=1),
-            nn.Conv3d(8, 16, kernel_size=(1, 3, 3), padding=1)
+            nn.Conv3d(1, 8, kernel_size=(1, 3, 3), padding='same'),
+            nn.Conv3d(8, 16, kernel_size=(1, 3, 3), padding='same')
         )
-        # self.conv3d2_2 = nn.Sequential(
-        #     nn.Conv3d(32, 32, kernel_size=(1, 3, 3), padding='valid'),
-        #     nn.Conv3d(32, 32, kernel_size=(1, 3, 3), padding='valid')
-        # )
-        #
-        # # pool and transpose layers : white arrows
-        # self.pool1 = nn.MaxPool3d((1, 2, 2), stride=2)
-        # self.pool2 = nn.MaxPool3d((2, 2, 2), stride=2)
-        # self.transpose_2 = nn.ConvTranspose3d(64, 32, (2, 2, 2))
-        # self.transpose_1 = nn.ConvTranspose3d(32, 16, (1, 2, 2))
-        #
-        # # 2xConv 3,3,3 Resu and HDC
-        # depth = int((depth - 4 - 1))
-        # self.convresu2_1 = ConvResu2(16, 32, False, depth)
-        # depth = int((depth - 4 - 1))
-        # self.convresu2_2 = ConvResu2(32, 64, False, depth)
-        # depth = int((depth - 4))
-        # self.hdc_1 = ConvResu2(64, 128, True, depth)
-        # depth = int((depth - 6))
-        # self.hdc_2 = ConvResu2(128, 256, True, depth)
-        # depth = int((depth - 6))
 
-        # self.convresu2_3 = ConvResu2(128, 64, False, depth)
-        # depth =
-        # self.convresu2_3 = ConvResu2(64, 32, False, depth)
+        self.conv3d2_2 = nn.Sequential(
+            nn.Conv3d(32, 32, kernel_size=(1, 3, 3), padding='same'),
+            nn.Conv3d(32, 32, kernel_size=(1, 3, 3), padding='same')
+        )
+
+        # pool and transpose layers : white arrows
+        self.pool1 = nn.MaxPool3d((1, 2, 2))
+        self.pool2 = nn.MaxPool3d((2, 2, 2))
+        self.transpose_2 = nn.ConvTranspose3d(64, 32, (2, 2, 2),stride=(2,2,2))
+        self.transpose_1 = nn.ConvTranspose3d(32, 16, (1, 2, 2),stride=(1,2,2))
+
+        # 2xConv 3,3,3 Resu and HDC
+        self.convresu2_1 = ConvResu2(16, 32, False)
+        self.convresu2_2 = ConvResu2(32, 64, False)
+        self.hdc_1 = ConvResu2(64, 128, True)
+        self.hdc_2 = ConvResu2(128, 256, True)
+        self.convresu2_3 = ConvResu2(128, 64, False)
+        self.convresu2_4 = ConvResu2(64, 32, False)
 
         # Conv 1 kernel
-        # self.conv1_1 = nn.Conv3d(256, 128, kernel_size=(1, 1, 1), padding='valid')
-        # self.conv1_2 = nn.Conv3d(128, 64, kernel_size=(1, 1, 1), padding='valid')
-        # self.conv1_3 = nn.Conv3d(32, 25, kernel_size=(1, 1, 1), padding='valid')
+        self.conv1_1 = nn.Conv3d(256, 128, kernel_size=(1, 1, 1), padding='same')
+        self.conv1_2 = nn.Conv3d(128, 64, kernel_size=(1, 1, 1), padding='same')
+        self.conv1_3 = nn.Conv3d(32, 25, kernel_size=(1, 1, 1), padding='same')
 
         # HDC kernel
-        hdc_depth = 57
-
-        # self.hdc_2 = ConvResu2(128, 256, True, depth)
-        # self.hdc_3 = ConvResu2(256, 128, True, depth)
+        self.hdc_2 = ConvResu2(128, 256, True)
+        self.hdc_3 = ConvResu2(256, 128, True)
 
     def forward(self, x):
-        print(x.shape)
+
         blue_concat = self.conv3d2_1(x)
-        print(blue_concat.shape)
 
-        # x = self.pool1(blue_concat)
-        #
-        # yellow_concat = self.convresu2_1(x)
-        # x = self.pool2(yellow_concat)
-        #
-        # green_concat = self.convresu2_2(x)
-        #
-        # orange_concat = self.hdc_1(green_concat)
-        #
-        # # x = self.hdc_2(orange_concat)
-        #
-        # # x = self.conv1_1(x)
-        #
-        # print(x.shape, orange_concat.shape)
-        # x = torch.cat((x, orange_concat), 1)
+        x = self.pool1(blue_concat)
 
-        # x = self.hdc_3(x)
-        #
-        # x = self.conv1_2(x)
-        #
-        # x = torch.cat((green_concat, x), 1)
-        #
-        # x = self.convresu2_2(x)
-        #
-        # x = self.transpose_2(x)
-        #
-        # x = torch.cat((yellow_concat, x), 1)
-        #
-        # x = self.convresu2_3(x)
-        #
-        # x = self.transpose_1(x)
-        #
-        # x = torch.cat((blue_concat, x), 1)
-        #
-        # x = self.conv3d2_2(x)
-        #
-        # x = self.conv1_3(x)
+        yellow_concat = self.convresu2_1(x)
+
+        x = self.pool2(yellow_concat)
+
+        green_concat = self.convresu2_2(x)
+        orange_concat = self.hdc_1(green_concat)
+
+        x = self.hdc_2(orange_concat)
+        x = self.conv1_1(x)
+
+        x = torch.cat((x, orange_concat), 1)
+        x = self.hdc_3(x)
+
+        x = self.conv1_2(x)
+
+        x = torch.cat((green_concat, x), 1)
+        x = self.convresu2_3(x)
+
+        x = self.transpose_2(x)
+
+        x = torch.cat((yellow_concat, x), 1)
+        x = self.convresu2_4(x)
+
+        x = self.transpose_1(x)
+
+        x = torch.cat((blue_concat, x), 1)
+        x = self.conv3d2_2(x)
+        x = self.conv1_3(x)
 
         return x
 
@@ -160,27 +140,5 @@ class OrganNet(nn.Module):
 
 
 if __name__ == "__main__":
-    net = OrganNet(48)
-    # z = 48
-    #
-    # summary(net, (1, 256, 256, z))
-
-    input_tensor = torch.rand((2, 1, 256, 256, 48))
-
-    a = net(input_tensor)
-
-
-    # print(x)
-    # input_tensor = torch.rand((2, 1, 256, 256, 48))
-    # output = net(input_tensor)
-    #
-    # print("----------------------------------------------------------------")
-    # summary(net, (1, 256, 256, 48))
-
-    # conv3d2_1 = nn.Sequential(
-    #     nn.Conv3d(1, 8, kernel_size=(1, 3, 3), padding=1, stride=(1, 1, 1))
-    #     # nn.Conv3d(8, 16, kernel_size=(1, 3, 3), padding=1)
-    # )
-    #
-    # x = conv3d2_1(input_block)
-    # print(x.shape)
+    net = OrganNet()
+    summary(net, (1, 256, 256, 24))
