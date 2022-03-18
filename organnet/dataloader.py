@@ -3,7 +3,7 @@ import os
 from torch.utils.data import Dataset
 
 transforms = [
-    tio.Resize((256, 256, 48))
+    tio.Resize((256, 256, 48)),
 ]
 
 
@@ -28,7 +28,8 @@ def get_data() -> tuple:
 
                 subjects_list.append(tio.Subject(
                     t1=tio.ScalarImage(os.path.join(patient_path, patient_data), ),
-                    label=tio.LabelMap(os.path.join(patient_path, label), ),
+                    label=tio.ScalarImage(os.path.join(patient_path, label), )
+                    ,
                 ))
 
         transform = tio.Compose(transforms)

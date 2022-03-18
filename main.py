@@ -4,27 +4,32 @@ from organnet.dataloader import get_data
 from organnet.focalLoss2 import FocalLoss2
 from organnet.model import OrganNet
 from datetime import datetime
-from organnet.loss import *
 from organnet.diceLoss import *
 from organnet.focalLoss import *
 import torch
 
 EPOCH = 1000
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+OUT_CHANNEL = 1
 
 # get the data from the dataloader, paper: batch size = 2
 training_data, test_data = get_data()
+train_size = int(0.8 * len(training_data))
+val_size = len(training_data) - train_size
+train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
 train_dataloader = DataLoader(training_data, batch_size=2, shuffle=True)
+validation_dataloader = DataLoader(val_dataset, batch_size=1, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=2, shuffle=True)
 
 # OrganNet model
-net = OrganNet()
+net = OrganNet(OUT_CHANNEL)
 net.to(DEVICE)
 
 # paper: adam 0.001 initial, reduced by factor 10 every 50 epoch
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 
 # focal loss + dice loss
+criterion = torch.nn.CrossEntropyLoss()
 criterion_focal = FocalLoss2()
 criterion_dice = DiceLoss()
 losses = []
@@ -33,12 +38,15 @@ val_losses = []
 # train model on train set
 for epoch in range(EPOCH):
     running_loss = 0.0
+    validation_loss = 0.0
 
     for i, data in enumerate(train_dataloader):
         inputs, labels = data['t1']['data'].to(DEVICE), data['label']['data'].to(DEVICE)
         optimizer.zero_grad()
-        outputs = inputs
-        print(outputs.shape, labels.shape)
+        labels = labels.type(torch.float)
+        inputs = inputs.type(torch.float)
+        outputs = net(inputs)
+
         loss_dice = criterion_dice(outputs.float(), labels.float())
         loss_focal = criterion_focal(outputs.float(), labels.float())
 
@@ -47,8 +55,21 @@ for epoch in range(EPOCH):
         optimizer.step()
         running_loss += loss.item()
 
+    with torch.no_grad():
+        for j, data in enumerate(validation_dataloader):
+            inputs, labels = data['t1']['data'].to(DEVICE), data['label']['data'].to(DEVICE)
+            outputs = net(inputs)
+
+            loss_dice = criterion_dice(outputs.float(), labels.float())
+            loss_focal = criterion_focal(outputs.float(), labels.float())
+            loss = loss_dice + loss_focal
+
+            validation_loss += loss.item()
+
     losses.append(running_loss)
-    print(f"[EPOCH {epoch}] loss: {running_loss}")
+    val_losses.append(validation_loss)
+
+    print(f"[EPOCH {epoch}] running loss: {running_loss}\tvalidation loss: {validation_loss}")
 
 # save the model
 print("-------------------------------------------------------")
@@ -57,10 +78,19 @@ print('Finished Training')
 now = datetime.now()
 
 PATH = './models/' + now.strftime("%d-%H:%M") + "OrganNet.pth"
-torch.save(net.state_dict(), PATH)
+net.save_checkpoint(optimizer, PATH)
 
 print("Model saved")
 print("-------------------------------------------------------")
+
+import matplotlib.pyplot as plt
+
+plt.figure()
+plt.plot(range(len(losses)), losses, 'r-')
+plt.plot(range(len(val_losses)), val_losses, 'b-')
+plt.grid()
+plt.xlabel('EPOCH')
+plt.ylabel('LOSS')
 
 # evaluate the model on the test set
 with torch.no_grad():
@@ -68,3 +98,5 @@ with torch.no_grad():
         inputs, labels = test_sample['t1']['data'].to(DEVICE), test_sample['label']['data'].to(DEVICE)
 
         print(f'input:{inputs.shape}\tlabel:{labels.shape}')
+
+plt.show()

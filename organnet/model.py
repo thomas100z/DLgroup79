@@ -49,7 +49,7 @@ class ConvResu2(nn.Module):
 
 class OrganNet(nn.Module):
 
-    def __init__(self) -> None:
+    def __init__(self, channel: int) -> None:
         super().__init__()
 
         # 2xConv 1,3,3 : green arrows
@@ -80,7 +80,7 @@ class OrganNet(nn.Module):
         # Conv 1 kernel
         self.conv1_1 = nn.Conv3d(256, 128, kernel_size=(1, 1, 1), padding='same')
         self.conv1_2 = nn.Conv3d(128, 64, kernel_size=(1, 1, 1), padding='same')
-        self.conv1_3 = nn.Conv3d(32, 25, kernel_size=(1, 1, 1), padding='same')
+        self.conv1_3 = nn.Conv3d(32, channel, kernel_size=(1, 1, 1), padding='same')
 
         # HDC kernel
         self.hdc_2 = ConvResu2(128, 256, True)
