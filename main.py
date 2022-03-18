@@ -8,13 +8,13 @@ from organnet.diceLoss import *
 from organnet.focalLoss import *
 import torch
 
-EPOCH = 1000
+EPOCH = 1
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 1
 
 # get the data from the dataloader, paper: batch size = 2
 training_data, test_data = get_data()
-train_size = int(0.8 * len(training_data))
+train_size = int(0.9 * len(training_data))
 val_size = len(training_data) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
 train_dataloader = DataLoader(training_data, batch_size=2, shuffle=True)
@@ -54,10 +54,13 @@ for epoch in range(EPOCH):
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
+        print(f"[EPOCH {epoch + 1}] sample: ({i}/{len(train_dataloader)})\tloss: {loss.item()}")
 
     with torch.no_grad():
         for j, data in enumerate(validation_dataloader):
             inputs, labels = data['t1']['data'].to(DEVICE), data['label']['data'].to(DEVICE)
+            labels = labels.type(torch.float)
+            inputs = inputs.type(torch.float)
             outputs = net(inputs)
 
             loss_dice = criterion_dice(outputs.float(), labels.float())
@@ -66,10 +69,10 @@ for epoch in range(EPOCH):
 
             validation_loss += loss.item()
 
-    losses.append(running_loss)
-    val_losses.append(validation_loss)
+    losses.append(running_loss/i)
+    val_losses.append(validation_loss/j)
 
-    print(f"[EPOCH {epoch}] running loss: {running_loss}\tvalidation loss: {validation_loss}")
+    print(f"[EPOCH {epoch + 1 }] running loss: {running_loss/i}\tvalidation loss: {validation_loss/j}")
 
 # save the model
 print("-------------------------------------------------------")
@@ -77,8 +80,8 @@ print('Finished Training')
 
 now = datetime.now()
 
-PATH = './models/' + now.strftime("%d-%H:%M") + "OrganNet.pth"
-net.save_checkpoint(optimizer, PATH)
+path = './models/' + now.strftime("%d-%H:%M") + "OrganNet.pth"
+net.save_checkpoint(optimizer, path)
 
 print("Model saved")
 print("-------------------------------------------------------")
@@ -93,10 +96,20 @@ plt.xlabel('EPOCH')
 plt.ylabel('LOSS')
 
 # evaluate the model on the test set
+test_loss = 0
 with torch.no_grad():
     for test_sample in test_dataloader:
         inputs, labels = test_sample['t1']['data'].to(DEVICE), test_sample['label']['data'].to(DEVICE)
+        labels = labels.type(torch.float)
+        inputs = inputs.type(torch.float)
+        outputs = net(inputs)
 
-        print(f'input:{inputs.shape}\tlabel:{labels.shape}')
+        loss_dice = criterion_dice(outputs.float(), labels.float())
+        loss_focal = criterion_focal(outputs.float(), labels.float())
+        loss = loss_dice + loss_focal
+
+        test_loss += loss.item()
+
+print(f'TEST LOSS: {test_loss}')
 
 plt.show()
