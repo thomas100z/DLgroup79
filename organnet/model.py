@@ -49,7 +49,7 @@ class ConvResu2(nn.Module):
 
 class OrganNet(nn.Module):
 
-    def __init__(self, channel: int = 1) -> None:
+    def __init__(self, channel: int = 10) -> None:
         super().__init__()
 
         # 2xConv 1,3,3 : green arrows

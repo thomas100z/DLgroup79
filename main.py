@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 import torch.optim as optim
-from organnet.dataloader import get_data
+from organnet.dataloader import MICCAI
 from organnet.model import OrganNet
 from datetime import datetime
 from organnet.loss import FocalLoss, DiceLoss
@@ -12,7 +12,7 @@ OUT_CHANNEL = 10
 LOAD_PATH = None #'./models/18-14:08OrganNet.pth'
 
 # get the data from the dataloader, paper: batch size = 2
-training_data, test_data = get_data()
+training_data, test_data = MICCAI('train'), MICCAI('train_additional')
 train_size = int(0.9 * len(training_data))
 val_size = len(training_data) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
@@ -43,7 +43,7 @@ for epoch in range(EPOCH):
     validation_loss = 0.0
 
     for i, data in enumerate(train_dataloader):
-        inputs, labels = data['t1']['data'].to(DEVICE), data['label']['data'].to(DEVICE)
+        inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
         optimizer.zero_grad()
         labels = labels.type(torch.float)
         inputs = inputs.type(torch.float)
@@ -61,7 +61,7 @@ for epoch in range(EPOCH):
 
     with torch.no_grad():
         for j, data in enumerate(validation_dataloader):
-            inputs, labels = data['t1']['data'].to(DEVICE), data['label']['data'].to(DEVICE)
+            inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
             labels = labels.type(torch.float)
             inputs = inputs.type(torch.float)
             outputs = net(inputs)
@@ -108,7 +108,7 @@ plt.ylabel('LOSS')
 test_loss = 0
 with torch.no_grad():
     for test_sample in test_dataloader:
-        inputs, labels = test_sample['t1']['data'].to(DEVICE), test_sample['label']['data'].to(DEVICE)
+        inputs, labels = test_sample[0].to(DEVICE), test_sample[1].to(DEVICE)
         labels = labels.type(torch.float)
         inputs = inputs.type(torch.float)
         outputs = net(inputs)

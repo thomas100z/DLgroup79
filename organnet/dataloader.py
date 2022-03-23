@@ -1,18 +1,21 @@
+from torch.utils.data import Dataset
 import torchio as tio
 import os
 
-transforms = [
-    tio.Resize((256, 256, 48)),
-]
-channel_encode = tio.transforms.OneHot(10)
 
+class MICCAI(Dataset):
+    images = []
+    labels = []
 
-def get_data() -> tuple:
-    subjects_list = []
-    subjects_dataset = {}
+    channel_encode = tio.transforms.OneHot(10)
 
-    for data_set in ['train', 'train_additional']:
+    def __init__(self, data_set: str) -> None:
+        super(MICCAI, self).__init__()
+
+        resize = tio.Resize((256, 256, 48))
+
         data_path = os.path.join('data', data_set, 'data_3D')
+
         for subject_code in os.listdir(data_path):
             if os.path.isdir(os.path.join(data_path, subject_code)):
                 patient_path = os.path.join(data_path, subject_code)
@@ -26,19 +29,15 @@ def get_data() -> tuple:
                     if 'mask' in file and 'resampled' not in file:
                         label = file
 
-                labels = channel_encode(tio.LabelMap(os.path.join(patient_path, label), type=tio.LABEL))
+                self.labels.append(resize(tio.LabelMap(os.path.join(patient_path, label), type=tio.LABEL)))
+                self.images.append(resize(tio.ScalarImage(os.path.join(patient_path, patient_data))))
 
-                subjects_list.append(tio.Subject(
-                    t1=tio.ScalarImage(os.path.join(patient_path, patient_data), ),
-                    label=labels)
-                    ,
-                )
+    def __len__(self) -> int:
+        return len(self.labels)
 
-        transform = tio.Compose(transforms)
-        subjects_dataset[data_set] = tio.SubjectsDataset(subjects_list, transform=transform)
-
-    return subjects_dataset['train'], subjects_dataset['train_additional']
+    def __getitem__(self, index):
+        return self.images[index].tensor, self.channel_encode(self.labels[index]).tensor
 
 
 if __name__ == "__main__":
-    train, test = get_data()
+    a = MICCAI('train_additional')
