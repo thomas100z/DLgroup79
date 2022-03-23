@@ -11,7 +11,7 @@ import torch
 EPOCH = 1
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 1
-LOAD_PATH = None #'./models/18-14:08OrganNet.pth'
+LOAD_PATH = './models/18-14:08OrganNet.pth'
 
 # get the data from the dataloader, paper: batch size = 2
 training_data, test_data = get_data()
@@ -31,10 +31,9 @@ optimizer = optim.Adam(net.parameters(), lr=0.001)
 
 # optional restore checkpoint
 if LOAD_PATH:
-    net.load_checkpoint(LOAD_PATH,optimizer, 0.001)
+    net.load_checkpoint(LOAD_PATH, optimizer, 0.001)
 
 # focal loss + dice loss
-criterion = torch.nn.CrossEntropyLoss()
 criterion_focal = FocalLoss2()
 criterion_dice = DiceLoss()
 losses = []
@@ -59,7 +58,8 @@ for epoch in range(EPOCH):
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
-        print(f"[EPOCH {epoch + 1}] sample: ({i}/{len(train_dataloader)})\tcombined loss: {loss.item()}\tloss_focal: {loss_focal.item()}\tloss_dice: {loss_dice.item()}")
+        print(
+            f"[EPOCH {epoch + 1}] sample: ({i}/{len(train_dataloader)})\tcombined loss: {loss.item()}\tloss_focal: {loss_focal.item()}\tloss_dice: {loss_dice.item()}")
 
     with torch.no_grad():
         for j, data in enumerate(validation_dataloader):
@@ -74,10 +74,15 @@ for epoch in range(EPOCH):
 
             validation_loss += loss.item()
 
-    losses.append(running_loss/i)
-    val_losses.append(validation_loss/j)
+    losses.append(running_loss / i)
+    val_losses.append(validation_loss / j)
 
-    print(f"[EPOCH {epoch + 1 }] running loss: {running_loss/i}\tvalidation loss: {validation_loss/j}")
+    # adjust the learning rate every 50 epochs according to the paper
+    if epoch % 50 == 0 and epoch > 1:
+        if optimizer.param_groups[0]['lr'] > 0.00001:
+            optimizer.param_groups[0]['lr'] = optimizer.param_groups[0]['lr'] / 10
+
+    print(f"[EPOCH {epoch + 1}] running loss: {running_loss / i}\tvalidation loss: {validation_loss / j}")
 
 # save the model
 print("-------------------------------------------------------")

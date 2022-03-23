@@ -49,7 +49,7 @@ class ConvResu2(nn.Module):
 
 class OrganNet(nn.Module):
 
-    def __init__(self, channel: int) -> None:
+    def __init__(self, channel: int = 1) -> None:
         super().__init__()
 
         # 2xConv 1,3,3 : green arrows
@@ -130,7 +130,7 @@ class OrganNet(nn.Module):
         }
         torch.save(checkpoint, filename)
 
-    def load_checkpoint(self, checkpoint_file, optimizer, lr):
+    def load_checkpoint(self, checkpoint_file, optimizer, lr=0.0001):
         checkpoint = torch.load(checkpoint_file, map_location=DEVICE)
         self.load_state_dict(checkpoint["state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer"])
