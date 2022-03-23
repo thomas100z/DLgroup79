@@ -6,7 +6,7 @@ from datetime import datetime
 from organnet.loss import FocalLoss, DiceLoss
 import torch
 
-EPOCH = 1
+EPOCH = 20
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 10
 LOAD_PATH = None #'./models/18-14:08OrganNet.pth'
@@ -37,6 +37,7 @@ criterion_dice = DiceLoss()
 losses = []
 val_losses = []
 
+from collections import Counter
 # train model on train set
 for epoch in range(EPOCH):
     running_loss = 0.0
@@ -44,13 +45,12 @@ for epoch in range(EPOCH):
 
     for i, data in enumerate(train_dataloader):
         inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
+
         optimizer.zero_grad()
-        labels = labels.type(torch.float)
-        inputs = inputs.type(torch.float)
         outputs = net(inputs)
 
-        loss_dice = criterion_dice(outputs.float(), labels.float())
-        loss_focal = criterion_focal(outputs.float(), labels.float())
+        loss_dice = criterion_dice(outputs, labels)
+        loss_focal = criterion_focal(outputs, labels)
 
         loss = loss_dice + loss_focal
         loss.backward()
@@ -62,12 +62,11 @@ for epoch in range(EPOCH):
     with torch.no_grad():
         for j, data in enumerate(validation_dataloader):
             inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
-            labels = labels.type(torch.float)
-            inputs = inputs.type(torch.float)
+
             outputs = net(inputs)
 
-            loss_dice = criterion_dice(outputs.float(), labels.float())
-            loss_focal = criterion_focal(outputs.float(), labels.float())
+            loss_dice = criterion_dice(outputs, labels)
+            loss_focal = criterion_focal(outputs, labels)
             loss = loss_dice + loss_focal
 
             validation_loss += loss.item()
@@ -109,12 +108,11 @@ test_loss = 0
 with torch.no_grad():
     for test_sample in test_dataloader:
         inputs, labels = test_sample[0].to(DEVICE), test_sample[1].to(DEVICE)
-        labels = labels.type(torch.float)
-        inputs = inputs.type(torch.float)
+
         outputs = net(inputs)
 
-        loss_dice = criterion_dice(outputs.float(), labels.float())
-        loss_focal = criterion_focal(outputs.float(), labels.float())
+        loss_dice = criterion_dice(outputs, labels)
+        loss_focal = criterion_focal(outputs, labels)
         loss = loss_dice + loss_focal
 
         test_loss += loss.item()

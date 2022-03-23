@@ -1,13 +1,10 @@
 import matplotlib.pyplot as plt
-from organnet.dataloader import get_data
-import torch
 from torch.utils.data import DataLoader
 import torch.optim as optim
-from organnet.dataloader import get_data
-from organnet.focalLoss2 import FocalLoss2
+from organnet.dataloader import MICCAI
 from organnet.model import OrganNet
-from organnet.diceLoss import *
-from organnet.focalLoss import *
+from organnet.loss import FocalLoss, DiceLoss
+import torch
 
 # load model
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -18,11 +15,10 @@ optimizer = optim.Adam(net.parameters(), lr=0.001)
 net.load_checkpoint(LOAD_PATH, optimizer, 0.001)
 
 # load data
-training_data, test_data = get_data()
-test_dataloader = DataLoader(test_data, batch_size=1, shuffle=True)
+test_dataloader = DataLoader(MICCAI('train_additional'), batch_size=1, shuffle=True)
 
 # focal loss + dice loss
-criterion_focal = FocalLoss2()
+criterion_focal = FocalLoss()
 criterion_dice = DiceLoss()
 losses = []
 val_losses = []
@@ -31,7 +27,7 @@ with torch.no_grad():
     test_loss = 0
     with torch.no_grad():
         for test_sample in test_dataloader:
-            inputs, labels = test_sample['t1']['data'].to(DEVICE), test_sample['label']['data'].to(DEVICE)
+            inputs, labels = test_sample[0].to(DEVICE), test_sample[0].to(DEVICE)
             labels = labels.type(torch.float)
             inputs = inputs.type(torch.float)
             outputs = net(inputs)
