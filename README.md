@@ -1,77 +1,26 @@
-## Planning of the DL reproducibility project
+# Deep Learning Reproducibility Project: A Novel Hybrid Convolutional Neural Network for Accurate Organ Segmentation in 3D Head and Neck CT Images
 
-##### Group agreement:
-2 joint appointments per week (1 physical and 1 hybrid). 
-Deliverable code in week 8 (30th march)
-Training/optimization in week 8/9
-Blog writing in week 8/9/10
-**Hand-in deadline 14 april**
+a description of the goals of the project,
+
+## Installation
 
 
-##### Workload planning/distribution:
-**Dataloader:**
-Thomas
-Lucas
-
-**Model reconstruction:**
-Thomas
-
-**Extracting 3D patches:**
+## Getting started
+ow to run the project (including installations)
 
 
-**Loss functions:**
-Lucas 
-Emma
-Storm
-
-**Inferencing:**
+## References 
+§  references to external links such as the paper and dataset,
 
 
-**Google Colab setup:**
-
-**Blog Writing**:
-Emma
+## Results
+§  some final results (once the project is finished)
 
 
-### Logbook
-**- Week 3:** 
-Individual: 
-Reading paper
+## Acknowledgements
+Original paper: A Novel Hybrid Convolutional Neural Network for Accurate Organ Segmentation in 3D Head and Neck CT Images
 
-Joint:
-Discussion of topic and deep learning methods; 
-Slide deck for intro meeting with Prerak Modi;
-Kickoff meeting with Prerak Modi
+By: Zijie Chen, Cheng Li, Junjun He, Jin Ye, Diping Song, Shanshan Wang, Lixu Gu, and Yu Qiao
 
-Issues identified: 
 
-**- Week 4:** 
-Individual:
-Acquaintance with 3DSlicer software, exploration of data format/3D images
-Thomas/Lucas: setup initial python skeleton/start dataloader
-Lucas/Storm: initial look into loss functions
-
-Joint: discuss unclear parameters, debunk U-Net network structure further.
-
-Issues identified: 
-1. Dimensionality of convolutions is unknown which seems to make a mismatch
-	- Posted questions to Prerak's doc how to approach this.
-2. Dataset masks seem to be combined in one channel in Prerak's version of the data.
-	- Discussed whether to use the original data set.  
-
-**- Week 5**
-Individual:
-
-Joint:
-
-Issues identified:
-1. Current focal and dice loss do not average over all masks in current implementation (as a result of masks being in a single file). 
-	- Fixing the Single Mask Channel problem could fix this. 
-
-**- Week 6**
-Individual:
-
-Joint:
-
-Issues identified:
-
+DOI: https://doi.org/10.1007/978-3-030-87193-2_54

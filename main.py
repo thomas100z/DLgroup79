@@ -1,17 +1,15 @@
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from organnet.dataloader import get_data
-from organnet.focalLoss2 import FocalLoss2
 from organnet.model import OrganNet
 from datetime import datetime
-from organnet.diceLoss import *
-from organnet.focalLoss import *
+from organnet.loss import FocalLoss, DiceLoss
 import torch
 
 EPOCH = 1
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-OUT_CHANNEL = 1
-LOAD_PATH = './models/18-14:08OrganNet.pth'
+OUT_CHANNEL = 10
+LOAD_PATH = None #'./models/18-14:08OrganNet.pth'
 
 # get the data from the dataloader, paper: batch size = 2
 training_data, test_data = get_data()
@@ -34,7 +32,7 @@ if LOAD_PATH:
     net.load_checkpoint(LOAD_PATH, optimizer, 0.001)
 
 # focal loss + dice loss
-criterion_focal = FocalLoss2()
+criterion_focal = FocalLoss()
 criterion_dice = DiceLoss()
 losses = []
 val_losses = []
@@ -58,8 +56,8 @@ for epoch in range(EPOCH):
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
-        print(
-            f"[EPOCH {epoch + 1}] sample: ({i}/{len(train_dataloader)})\tcombined loss: {loss.item()}\tloss_focal: {loss_focal.item()}\tloss_dice: {loss_dice.item()}")
+        print(f"[EPOCH {epoch + 1}] sample: ({i}/{len(train_dataloader)})\t"
+              f"combined loss: {loss.item()}\tloss_focal: {loss_focal.item()}\tloss_dice: {loss_dice.item()}")
 
     with torch.no_grad():
         for j, data in enumerate(validation_dataloader):
@@ -74,15 +72,16 @@ for epoch in range(EPOCH):
 
             validation_loss += loss.item()
 
-    losses.append(running_loss / i)
-    val_losses.append(validation_loss / j)
+    losses.append(running_loss / len(train_dataloader))
+    val_losses.append(validation_loss / len(validation_dataloader))
 
     # adjust the learning rate every 50 epochs according to the paper
     if epoch % 50 == 0 and epoch > 1:
         if optimizer.param_groups[0]['lr'] > 0.00001:
             optimizer.param_groups[0]['lr'] = optimizer.param_groups[0]['lr'] / 10
 
-    print(f"[EPOCH {epoch + 1}] running loss: {running_loss / i}\tvalidation loss: {validation_loss / j}")
+    print(f"[EPOCH {epoch + 1}] running loss: {running_loss / len(train_dataloader)}\t"
+          f"validation loss: {validation_loss / len(validation_dataloader)}")
 
 # save the model
 print("-------------------------------------------------------")

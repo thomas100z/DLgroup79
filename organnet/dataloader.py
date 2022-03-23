@@ -1,10 +1,10 @@
 import torchio as tio
 import os
-from torch.utils.data import Dataset
 
 transforms = [
     tio.Resize((256, 256, 48)),
 ]
+channel_encode = tio.transforms.OneHot(10)
 
 
 def get_data() -> tuple:
@@ -26,11 +26,13 @@ def get_data() -> tuple:
                     if 'mask' in file and 'resampled' not in file:
                         label = file
 
+                labels = channel_encode(tio.LabelMap(os.path.join(patient_path, label), type=tio.LABEL))
+
                 subjects_list.append(tio.Subject(
                     t1=tio.ScalarImage(os.path.join(patient_path, patient_data), ),
-                    label=tio.ScalarImage(os.path.join(patient_path, label), )
+                    label=labels)
                     ,
-                ))
+                )
 
         transform = tio.Compose(transforms)
         subjects_dataset[data_set] = tio.SubjectsDataset(subjects_list, transform=transform)
@@ -39,4 +41,4 @@ def get_data() -> tuple:
 
 
 if __name__ == "__main__":
-    get_data()
+    train, test = get_data()
