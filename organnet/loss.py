@@ -11,11 +11,9 @@ class DiceLoss(nn.Module):
     def forward(self, inputs, targets, smooth=1):
         inputs = torch.sigmoid(inputs)
 
-        inputs = inputs.view(-1)
-        targets = targets.view(-1)
-
-        intersection = (inputs * targets).sum()
-        dice = (2. * intersection + smooth) / (inputs.sum() + targets.sum() + smooth)
+        intersection = torch.mul(inputs, targets).sum([0, 2, 3, 4])
+        dice = (2. * intersection) / (inputs.sum([0, 2, 3, 4]) + targets.sum([0, 2, 3, 4]) + smooth)
+        dice = dice.sum() / 10
 
         return 1 - dice
 
@@ -74,8 +72,8 @@ class FocalLoss_wrong(nn.Module):
 if __name__ == "__main__":
     f = FocalLoss()
     d = DiceLoss()
-    a = torch.zeros(2, 1, 256, 256, 48)
-    b = torch.ones(2, 1, 256, 256, 48)
+    a = torch.zeros(2, 10, 256, 256, 48)
+    b = torch.ones(2, 10, 256, 256, 48)
 
     print(d(b, b))
     print(d(b, a))
