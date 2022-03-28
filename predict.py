@@ -5,6 +5,7 @@ from organnet.dataloader import MICCAI
 from organnet.model import OrganNet
 from organnet.loss import FocalLoss, DiceLoss
 import torch
+import numpy as np
 
 # load model
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -24,15 +25,25 @@ losses = []
 val_losses = []
 
 
-# def dice_coef(y_pred,y_true):
-#     smooth = 1.0
-#     y_true_f = torch.flatten(y_true)
-#     y_pred_f = torch.flatten(torch.argmax(y_pred, axis=1))
-#     intersection = torch.sum(y_true_f * y_pred_f)
-#     return (2. * intersection + smooth) / (torch.sum(y_true_f) + torch.sum(y_pred_f) + smooth)
+def dice_score(inputs, targets):
+    n, c, h, w, d = inputs.shape
+    assert n == 1
+    inputs = inputs.reshape((c, h, w, d))
+    targets = targets.reshape((c, h, w, d))
+
+    c_max_input = torch.argmax(inputs, 0)
+    smooth = 1.0
+
+    result = torch.empty(c, h, w, d)
+    for i in range(c):
+        result[i] = torch.where(c_max_input == i, 1, 0)
+
+    intersection = torch.mul(inputs, targets).sum([1, 2, 3])
+    dice = (2. * intersection) / (inputs.sum([1, 2, 3]) + targets.sum([1, 2, 3]) + smooth)
+
+    return dice * 100
 
 DSC = []
-
 
 with torch.no_grad():
     test_loss = 0
@@ -53,31 +64,5 @@ with torch.no_grad():
             dsc = net.dice_coef_multi_class(outputs.float(), labels.float())
             DSC.append(dsc)
             print(DSC)
-
-            # for channel in data:
-            #     print(channel.shape)
-
-            import plotly.graph_objects as go
-            import numpy as np
-
-            # values = data
-            # print(values)
-            # print("jo1", values[0].flatten())
-            # print("jo2", values[:, 1].flatten())
-            # print("jo3", values[:, 2].flatten())
-            # print("jo4", values[:, 3].flatten())
-            # print("jo5", values[:, 4].flatten())
-
-            # fig = go.Figure(data=go.Volume(
-            #     x=values[:, 1].flatten(),
-            #     y=values[:, 2].flatten(),
-            #     z=values[:, 3].flatten(),
-            #     value=values[:, 0].flatten(),
-            #     isomin=0.1,
-            #     isomax=0.8,
-            #     opacity=0.1,  # needs to be small to see through all surfaces
-            #     surface_count=17,  # needs to be a large number for good volume rendering
-            # ))
-            # fig.show()
 
     print(f'TEST LOSS: {test_loss}')
