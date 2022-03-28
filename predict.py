@@ -34,9 +34,9 @@ def dice_score(inputs, targets):
     c_max_input = torch.argmax(inputs, 0)
     smooth = 1.0
 
-    result = torch.empty(c, h, w, d)
+    inputs = torch.empty(c, h, w, d)
     for i in range(c):
-        result[i] = torch.where(c_max_input == i, 1, 0)
+        inputs[i] = torch.where(c_max_input == i, 1, 0)
 
     intersection = torch.mul(inputs, targets).sum([1, 2, 3])
     dice = (2. * intersection) / (inputs.sum([1, 2, 3]) + targets.sum([1, 2, 3]) + smooth)
