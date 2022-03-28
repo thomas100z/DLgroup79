@@ -9,7 +9,7 @@ import torch
 EPOCH = 20
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 10
-LOAD_PATH = None #'./models/18-14:08OrganNet.pth'
+LOAD_PATH = None  # './models/18-14:08OrganNet.pth'
 
 # get the data from the dataloader, paper: batch size = 2
 training_data, test_data = MICCAI('train'), MICCAI('train_additional')
@@ -17,8 +17,8 @@ train_size = int(0.9 * len(training_data))
 val_size = len(training_data) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
 train_dataloader = DataLoader(training_data, batch_size=2, shuffle=True)
-validation_dataloader = DataLoader(val_dataset, batch_size=1, shuffle=True)
-test_dataloader = DataLoader(test_data, batch_size=2, shuffle=True)
+validation_dataloader = DataLoader(val_dataset, batch_size=2, shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=1, shuffle=True)
 
 # OrganNet model
 net = OrganNet(OUT_CHANNEL)
@@ -38,6 +38,7 @@ losses = []
 val_losses = []
 
 from collections import Counter
+
 # train model on train set
 for epoch in range(EPOCH):
     running_loss = 0.0
@@ -88,7 +89,7 @@ print('Finished Training')
 
 now = datetime.now()
 
-path = './models/' + now.strftime("%d-%H:%M") + "OrganNet.pth"
+path = './models/' + now.strftime("%d-%H:%M") + "-OrganNet.pth"
 net.save_checkpoint(optimizer, path)
 
 print("Model saved")

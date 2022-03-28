@@ -7,7 +7,6 @@ import os
 class MICCAI(Dataset):
     images = []
     labels = []
-
     channel_encode = 10
 
     def __init__(self, data_set: str):
@@ -50,10 +49,6 @@ class MICCAI(Dataset):
 
 if __name__ == "__main__":
     a = MICCAI('train_additional')
-
-    for i in a:
-
-        print('')
 
 
 

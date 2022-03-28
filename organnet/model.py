@@ -140,38 +140,6 @@ class OrganNet(nn.Module):
         for param_group in optimizer.param_groups:
             param_group["lr"] = lr
 
-    def dice_coef_multi_class(self, y_pred, y_true):
-        n_classes = 10
-        smooth = np.float32(1e-7)
-        y_true = y_true.data
-        y_pred = y_pred.data
-        print("1", y_true.shape)
-        print("2", y_pred.shape)
-
-
-        y_pred = torch.argmax(y_pred, 1)
-        y_true = torch.argmax(y_true, 1)
-        print("3", y_pred.shape)
-        y_pred = torch.unsqueeze(y_pred, 1)
-        print("4", y_pred.shape)
-
-        y_pred = torch.flatten(y_pred)
-        y_true = torch.flatten(y_true)
-        print("5", y_true.shape)
-        print("6", y_pred.shape)
-
-        dice = np.zeros(n_classes)
-        self.sum = torch.zeros([n_classes])
-        for i in range(n_classes):
-            y_true_i = np.equal(y_true, i)
-            y_pred_i = np.equal(y_pred, i)
-            self.sum[i] = torch.sum(y_true_i) + torch.sum(y_pred_i) + smooth
-            dice[i] = (2. * torch.sum(y_true_i * y_pred_i) + smooth) / self.sum[i]
-        print(dice)
-        self.sum = torch.sum(self.sum)
-        self.dice = np.sum(dice)
-        return self.dice
-
 
 if __name__ == "__main__":
     net = OrganNet()
