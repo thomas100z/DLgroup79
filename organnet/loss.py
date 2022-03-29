@@ -25,7 +25,8 @@ class FocalLoss(nn.Module):
 
         if alpha is None:
             # alpha = [0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]
-            alpha = [1, 1, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+            alpha = torch.tensor([1, 1, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+            alpha =  alpha.reshape(1,10,1,1,1)
 
         self.gamma = gamma
         self.alpha = alpha
@@ -72,8 +73,10 @@ class FocalLoss(nn.Module):
 if __name__ == "__main__":
     f = FocalLoss()
     d = DiceLoss()
-    a = torch.rand(2, 10, 15, 15, 5) * 10 - torch.rand(2, 10, 15, 15, 5) * 10
     b = torch.ones(2, 10, 15, 15, 5)
-    c = torch.zeros(2, 10, 15, 15, 5)
-
-    print(f(b, b).shape)
+    c = torch.arange(10)
+    print(c)
+    c = c.reshape(1,10,1,1,1)
+    dsfsdf = torch.mul(c,b)
+    print('')
+    # print(f(b, b).shape)
