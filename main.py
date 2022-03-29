@@ -1,3 +1,6 @@
+import os
+
+import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from organnet.dataloader import MICCAI
@@ -14,7 +17,8 @@ ALPHA = torch.tensor([0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape
 GAMMA = 2
 
 # get the data from the dataloader, paper: batch size = 2
-training_data = MICCAI('train', load=True)
+load_data_set = True if 'trainimages.pickle' in os.listdir('data') else False
+training_data = MICCAI('train', load=load_data_set)
 train_size = int(0.9 * len(training_data))
 val_size = len(training_data) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
@@ -22,8 +26,7 @@ train_dataloader = DataLoader(training_data, batch_size=2, shuffle=True)
 validation_dataloader = DataLoader(val_dataset, batch_size=2, shuffle=True)
 
 # OrganNet model
-net = OrganNet(OUT_CHANNEL)
-net.to(DEVICE)
+net = OrganNet(OUT_CHANNEL).to(DEVICE)
 
 # paper: adam 0.001 initial, reduced by factor 10 every 50 epoch
 optimizer = optim.Adam(net.parameters(), lr=0.001)
@@ -38,50 +41,53 @@ criterion_dice = DiceLoss()
 
 losses = []
 val_losses = []
-
 # train model on train set
-for epoch in range(EPOCH):
-    running_loss = 0.0
-    validation_loss = 0.0
+try:
+    for epoch in range(EPOCH):
+        running_loss = 0.0
+        validation_loss = 0.0
 
-    for i, data in enumerate(train_dataloader):
-        inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
-
-        optimizer.zero_grad()
-        outputs = net(inputs)
-
-        loss_dice = criterion_dice(outputs, labels)
-        loss_focal = criterion_focal(outputs, labels)
-
-        loss = loss_dice + loss_focal
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item()
-        print(f"[EPOCH {epoch + 1}] sample: ({i}/{len(train_dataloader)})\t"
-              f"combined loss: {loss.item()}\tloss_focal: {loss_focal.item()}\tloss_dice: {loss_dice.item()}")
-
-    with torch.no_grad():
-        for j, data in enumerate(validation_dataloader):
+        for i, data in enumerate(train_dataloader):
             inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
 
+            optimizer.zero_grad()
             outputs = net(inputs)
 
             loss_dice = criterion_dice(outputs, labels)
             loss_focal = criterion_focal(outputs, labels)
+
             loss = loss_dice + loss_focal
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            print(f"[EPOCH {epoch + 1}] sample: ({i}/{len(train_dataloader)})\t"
+                  f"combined loss: {loss.item()}\tloss_focal: {loss_focal.item()}\tloss_dice: {loss_dice.item()}")
 
-            validation_loss += loss.item()
+        with torch.no_grad():
+            for j, data in enumerate(validation_dataloader):
+                inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
 
-    losses.append(running_loss / len(train_dataloader))
-    val_losses.append(validation_loss / len(validation_dataloader))
+                outputs = net(inputs)
 
-    # adjust the learning rate every 50 epochs according to the paper
-    if epoch % 50 == 0 and epoch > 1:
-        if optimizer.param_groups[0]['lr'] > 0.00001:
-            optimizer.param_groups[0]['lr'] = optimizer.param_groups[0]['lr'] / 10
+                loss_dice = criterion_dice(outputs, labels)
+                loss_focal = criterion_focal(outputs, labels)
+                loss = loss_dice + loss_focal
 
-    print(f"[EPOCH {epoch + 1}] running loss: {running_loss / len(train_dataloader)}\t"
-          f"validation loss: {validation_loss / len(validation_dataloader)}")
+                validation_loss += loss.item()
+
+        losses.append(running_loss / len(train_dataloader))
+        val_losses.append(validation_loss / len(validation_dataloader))
+
+        # adjust the learning rate every 50 epochs according to the paper
+        if epoch % 50 == 0 and epoch > 1:
+            if optimizer.param_groups[0]['lr'] > 0.00001:
+                optimizer.param_groups[0]['lr'] = optimizer.param_groups[0]['lr'] / 10
+
+        print(f"[EPOCH {epoch + 1}] running loss: {running_loss / len(train_dataloader)}\t"
+              f"validation loss: {validation_loss / len(validation_dataloader)}")
+
+except KeyboardInterrupt:
+    print("Terminating training")
 
 # save the model
 print("-------------------------------------------------------")
@@ -95,7 +101,6 @@ net.save_checkpoint(optimizer, path)
 print("Model saved")
 print("-------------------------------------------------------")
 
-import matplotlib.pyplot as plt
 plt.figure()
 plt.plot(range(len(losses)), losses, 'r-')
 plt.plot(range(len(val_losses)), val_losses, 'b-')

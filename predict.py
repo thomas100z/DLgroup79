@@ -18,7 +18,7 @@ optimizer = optim.Adam(net.parameters(), lr=0.001)
 net.load_checkpoint(LOAD_PATH, optimizer, 0.001)
 
 # load data
-test_dataloader = DataLoader(MICCAI('train_additional'), batch_size=1, shuffle=True)
+test_dataloader = DataLoader(MICCAI('train_additional', load=True), batch_size=1, shuffle=True)
 
 # focal loss + dice loss
 criterion_focal = FocalLoss(GAMMA, ALPHA)

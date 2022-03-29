@@ -29,11 +29,8 @@ class FocalLoss(nn.Module):
 
     def forward(self, inputs, targets):
         inputs = torch.sigmoid(inputs)
-        bce_loss = F.binary_cross_entropy(inputs, targets, reduction='none')
-        focal_loss = self.alpha * (1. - inputs) ** self.gamma * bce_loss
-        focal_loss = focal_loss.sum([0, 1])
-
-        return (focal_loss / self.n).mean()
+        focal_loss = self.alpha * ((1. - inputs) ** self.gamma) * (targets * torch.log(inputs + 1e-7))
+        return - (focal_loss.sum([0,1]) / self.n).mean()
 
 
 if __name__ == "__main__":
@@ -42,7 +39,7 @@ if __name__ == "__main__":
     f = FocalLoss(GAMMA, ALPHA)
 
     d = DiceLoss()
-    a = torch.zeros(2, 10, 15, 15, 5)
+    a = torch.rand(2, 10, 15, 15, 5) * 50
     b = torch.ones(2, 10, 15, 15, 5)
     print(f(a, b))
     print(f(b, b))
