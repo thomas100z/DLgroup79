@@ -6,19 +6,20 @@ from datetime import datetime
 from organnet.loss import FocalLoss, DiceLoss
 import torch
 
-EPOCH = 20
+EPOCH = 100
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 10
-LOAD_PATH = None  # './models/18-14:08OrganNet.pth'
+LOAD_PATH = None #'models/29-11:33-OrganNet.pth'
+ALPHA = torch.tensor([0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape(1,10,1,1,1)
+GAMMA = 2
 
 # get the data from the dataloader, paper: batch size = 2
-training_data, test_data = MICCAI('train'), MICCAI('train_additional')
+training_data = MICCAI('train', load=True)
 train_size = int(0.9 * len(training_data))
 val_size = len(training_data) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
 train_dataloader = DataLoader(training_data, batch_size=2, shuffle=True)
 validation_dataloader = DataLoader(val_dataset, batch_size=2, shuffle=True)
-test_dataloader = DataLoader(test_data, batch_size=1, shuffle=True)
 
 # OrganNet model
 net = OrganNet(OUT_CHANNEL)
@@ -32,12 +33,11 @@ if LOAD_PATH:
     net.load_checkpoint(LOAD_PATH, optimizer, 0.001)
 
 # focal loss + dice loss
-criterion_focal = FocalLoss()
+criterion_focal = FocalLoss(GAMMA, ALPHA)
 criterion_dice = DiceLoss()
+
 losses = []
 val_losses = []
-
-from collections import Counter
 
 # train model on train set
 for epoch in range(EPOCH):
@@ -96,28 +96,10 @@ print("Model saved")
 print("-------------------------------------------------------")
 
 import matplotlib.pyplot as plt
-
 plt.figure()
 plt.plot(range(len(losses)), losses, 'r-')
 plt.plot(range(len(val_losses)), val_losses, 'b-')
 plt.grid()
 plt.xlabel('EPOCH')
 plt.ylabel('LOSS')
-
-# evaluate the model on the test set
-test_loss = 0
-with torch.no_grad():
-    for test_sample in test_dataloader:
-        inputs, labels = test_sample[0].to(DEVICE), test_sample[1].to(DEVICE)
-
-        outputs = net(inputs)
-
-        loss_dice = criterion_dice(outputs, labels)
-        loss_focal = criterion_focal(outputs, labels)
-        loss = loss_dice + loss_focal
-
-        test_loss += loss.item()
-
-print(f'TEST LOSS: {test_loss}')
-
 plt.show()
