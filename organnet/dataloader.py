@@ -2,36 +2,50 @@ from torch.utils.data import Dataset
 import torchio as tio
 import torch
 import os
-
+import pickle
 
 class MICCAI(Dataset):
     images = []
     labels = []
     channel_encode = 10
 
-    def __init__(self, data_set: str):
+    def __init__(self, data_set: str, load: bool=False):
         super(MICCAI, self).__init__()
 
-        resize = tio.Resize((256, 256, 48))
+        if load:
+            with open('data/' + data_set +'images.pickle', 'rb') as handle:
+                self.images = pickle.load(handle)
 
-        data_path = os.path.join('data', data_set, 'data_3D')
+            with open('data/' + data_set +'labels.pickle', 'rb') as handle:
+                self.labels = pickle.load(handle)
+        else:
 
-        for subject_code in os.listdir(data_path):
-            if os.path.isdir(os.path.join(data_path, subject_code)):
-                patient_path = os.path.join(data_path, subject_code)
-                files = os.listdir(patient_path)
-                patient_data = None
-                label = None
-                for file in files:
-                    if 'img' in file and 'mha' in file and 'resampled' not in file:
-                        patient_data = file
+            resize = tio.Resize((256, 256, 48))
+            data_path = os.path.join('data', data_set, 'data_3D')
 
-                    if 'mask' in file and 'resampled' not in file:
-                        label = file
-                label = resize(tio.LabelMap(os.path.join(patient_path, label), type=tio.LABEL))
-                label = label.tensor.type(torch.LongTensor)
-                self.labels.append(label)
-                self.images.append(resize(tio.ScalarImage(os.path.join(patient_path, patient_data))).tensor.float())
+            for subject_code in os.listdir(data_path):
+                if os.path.isdir(os.path.join(data_path, subject_code)):
+                    patient_path = os.path.join(data_path, subject_code)
+                    files = os.listdir(patient_path)
+                    patient_data = None
+                    label = None
+                    for file in files:
+                        if 'img' in file and 'mha' in file and 'resampled' not in file:
+                            patient_data = file
+
+                        if 'mask' in file and 'resampled' not in file:
+                            label = file
+                    label = resize(tio.LabelMap(os.path.join(patient_path, label), type=tio.LABEL))
+                    label = label.tensor.type(torch.LongTensor)
+                    self.labels.append(label)
+                    self.images.append(resize(tio.ScalarImage(os.path.join(patient_path, patient_data))).tensor.float())
+
+            with open('data/' + data_set +'images.pickle', 'wb') as handle:
+                pickle.dump(self.images, handle)
+
+            with open('data/' + data_set +'labels.pickle', 'wb') as handle:
+                pickle.dump(self.labels, handle)
+
 
     def __len__(self):
         return len(self.labels)
@@ -48,7 +62,7 @@ class MICCAI(Dataset):
 
 
 if __name__ == "__main__":
-    a = MICCAI('train_additional')
+    a = MICCAI('train')
 
 
 
