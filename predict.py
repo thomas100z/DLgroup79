@@ -9,7 +9,7 @@ import numpy as np
 
 # load model
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-LOAD_PATH = './models/23-21:15OrganNet.pth'
+LOAD_PATH = './models/28-23:04-OrganNet.pth'
 
 net = OrganNet()
 optimizer = optim.Adam(net.parameters(), lr=0.001)
@@ -43,7 +43,8 @@ def dice_score(inputs, targets):
 
     return dice * 100
 
-DSC = []
+
+DSC = {"0": [], "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": [], "9": []}
 
 with torch.no_grad():
     test_loss = 0
@@ -60,9 +61,21 @@ with torch.no_grad():
             test_loss += loss.item()
 
             _, c, h, w, d = labels.size()
-            data = labels.view(c, h, w, d)
-            dsc = net.dice_coef_multi_class(outputs.float(), labels.float())
-            DSC.append(dsc)
-            print(DSC)
+            # data = labels.view(c, h, w, d)
+            dsc = dice_score(outputs.float(), labels.float())
+            i = 0
+            for organ_dsc in dsc:
+                DSC[str(i)].append(float(organ_dsc.item()))
+                i += 1
+    print(DSC)
 
     print(f'TEST LOSS: {test_loss}')
+
+    DSC_avg = {"0": [], "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": [], "9": []}
+    i = 0
+    for organ in DSC.items():
+        DSC_avg[str(i)] = sum(organ[1]) / len(organ[1])
+        i += 1
+    print(DSC_avg)
+
+
