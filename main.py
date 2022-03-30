@@ -12,9 +12,10 @@ import torch
 EPOCH = 100
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 10
-LOAD_PATH = None #'models/29-11:33-OrganNet.pth'
+LOAD_PATH = None #'models/29-14:44-OrganNet.pth'
 ALPHA = torch.tensor([0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape(1,10,1,1,1)
 GAMMA = 2
+BATCH_SIZE = 2
 
 # get the data from the dataloader, paper: batch size = 2
 load_data_set = True if 'trainimages.pickle' in os.listdir('data') else False
@@ -22,8 +23,8 @@ training_data = MICCAI('train', load=load_data_set)
 train_size = int(0.9 * len(training_data))
 val_size = len(training_data) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
-train_dataloader = DataLoader(training_data, batch_size=2, shuffle=True)
-validation_dataloader = DataLoader(val_dataset, batch_size=2, shuffle=True)
+train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
+validation_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 # OrganNet model
 net = OrganNet(OUT_CHANNEL).to(DEVICE)
@@ -36,11 +37,12 @@ if LOAD_PATH:
     net.load_checkpoint(LOAD_PATH, optimizer, 0.001)
 
 # focal loss + dice loss
-criterion_focal = FocalLoss(GAMMA, ALPHA)
-criterion_dice = DiceLoss()
+criterion_focal = FocalLoss(GAMMA, ALPHA, shape=(BATCH_SIZE, *training_data[0][0].shape))
+criterion_dice = DiceLoss(channels=OUT_CHANNEL)
 
 losses = []
 val_losses = []
+
 # train model on train set
 try:
     for epoch in range(EPOCH):

@@ -87,6 +87,9 @@ class OrganNet(nn.Module):
         self.hdc_2 = ConvResu2(128, 256, True)
         self.hdc_3 = ConvResu2(256, 128, True)
 
+        # Softmax the output
+        self.softmax = nn.Softmax(dim=1)
+
     def forward(self, x):
 
         blue_concat = self.conv3d2_1(x)
@@ -122,7 +125,7 @@ class OrganNet(nn.Module):
         x = self.conv3d2_2(x)
         x = self.conv1_3(x)
 
-        return x
+        return self.softmax(x)
 
     def save_checkpoint(self, optimizer, filename=os.path.join('models', 'model_checkpoint.pth')):
         checkpoint = {

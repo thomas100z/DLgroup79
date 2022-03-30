@@ -69,15 +69,14 @@ with torch.no_grad():
             for i, organ_dsc in enumerate(dsc):
                 DSC[str(i)].append(float(organ_dsc.item()))
 
-    print(DSC)
-
+    # print(DSC)
     print(f'TEST LOSS: {test_loss}')
 
     DSC_avg = {}
-    i = 0
-    for organ in DSC.items():
+    for i, organ in enumerate(DSC.items()):
         DSC_avg[str(i)] = sum(organ[1]) / len(organ[1])
-        i += 1
-    print(DSC_avg)
 
+
+    for k,v in DSC_avg.items():
+        print(k,v)
 

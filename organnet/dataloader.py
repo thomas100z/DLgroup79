@@ -33,12 +33,16 @@ class MICCAI(Dataset):
                         if 'img' in file and 'mha' in file and 'resampled' not in file:
                             patient_data = file
 
-                        if 'mask' in file and 'resampled' not in file:
+                        if 'mask' in file and 'resampled' in file:
                             label = file
                     label = resize(tio.LabelMap(os.path.join(patient_path, label), type=tio.LABEL))
                     label = label.tensor.type(torch.LongTensor)
+
+                    image = resize(tio.ScalarImage(os.path.join(patient_path, patient_data)))
+                    image = image.tensor.float() / 256
+
                     self.labels.append(label)
-                    self.images.append(resize(tio.ScalarImage(os.path.join(patient_path, patient_data))).tensor.float())
+                    self.images.append(image)
 
             with open('data/' + data_set +'images.pickle', 'wb') as handle:
                 pickle.dump(self.images, handle)
@@ -62,7 +66,7 @@ class MICCAI(Dataset):
 
 
 if __name__ == "__main__":
-    a = MICCAI('train')
+    a = MICCAI('train', load=False)
 
 
 
