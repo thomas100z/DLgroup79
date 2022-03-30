@@ -63,28 +63,28 @@ DSC = {"0": [], "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "
 
 with torch.no_grad():
     test_loss = 0
-    with torch.no_grad():
-        for test_sample in test_dataloader:
-            inputs, labels = test_sample[0].to(DEVICE), test_sample[1].to(DEVICE)
 
-            outputs = net(inputs)
-            loss_dice = criterion_dice(outputs, labels)
-            loss_focal = criterion_focal(outputs, labels)
-            loss = loss_dice + loss_focal
+    for test_sample in test_dataloader:
+        inputs, labels = test_sample[0].to(DEVICE), test_sample[1].to(DEVICE)
 
-            test_loss += loss.item()
-            dsc = dice_score(outputs, labels)
+        outputs = net(inputs)
+        loss_dice = criterion_dice(outputs, labels)
+        loss_focal = criterion_focal(outputs, labels)
+        loss = loss_dice + loss_focal
 
-            for i, organ_dsc in enumerate(dsc):
-                DSC[str(i)].append(float(organ_dsc.item()))
+        test_loss += loss.item()
+        dsc = dice_score(outputs, labels)
 
-    print(f'TEST LOSS: {test_loss}')
+        for i, organ_dsc in enumerate(dsc):
+            DSC[str(i)].append(float(organ_dsc.item()))
 
-    DSC_avg = {}
-    for i, organ in enumerate(DSC.items()):
-        DSC_avg[str(i)] = sum(organ[1]) / len(organ[1])
+print(f'TEST LOSS: {test_loss/len(test_dataloader)}')
 
-    for i, (k, v) in enumerate(DSC_avg.items()):
-        print("Organ:", organs[i], 'DSC:', round(v,1))
+DSC_avg = {}
+for i, organ in enumerate(DSC.items()):
+    DSC_avg[str(i)] = sum(organ[1]) / len(organ[1])
 
-    print('DSC AVERAGE = ', round((sum(DSC_avg.values()) / len(DSC_avg)), 1))
+for i, (k, v) in enumerate(DSC_avg.items()):
+    print("Organ:", organs[i], 'DSC:', round(v,1))
+
+print('DSC AVERAGE = ', round((sum(DSC_avg.values()) / len(DSC_avg)), 1))

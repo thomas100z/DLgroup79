@@ -12,7 +12,7 @@ import torch
 EPOCH = 100
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 10
-LOAD_PATH = None  #'models/30-19:24-OrganNet.pth'
+LOAD_PATH = None #'models/30-21:46-OrganNet.pth'
 ALPHA = torch.tensor([0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape(1,10,1,1,1)
 GAMMA = 2
 BATCH_SIZE = 2
