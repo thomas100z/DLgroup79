@@ -12,7 +12,7 @@ import torch
 EPOCH = 100
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 10
-LOAD_PATH = None #'models/29-14:44-OrganNet.pth'
+LOAD_PATH = None  #'models/30-19:24-OrganNet.pth'
 ALPHA = torch.tensor([0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape(1,10,1,1,1)
 GAMMA = 2
 BATCH_SIZE = 2
@@ -20,10 +20,12 @@ BATCH_SIZE = 2
 # get the data from the dataloader, paper: batch size = 2
 load_data_set = True if 'trainimages.pickle' in os.listdir('data') else False
 training_data = MICCAI('train', load=load_data_set)
-train_size = int(0.9 * len(training_data))
+
+train_size = int(0.95 * len(training_data))
 val_size = len(training_data) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
-train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
+
+train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 validation_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 # OrganNet model
@@ -50,7 +52,7 @@ try:
         validation_loss = 0.0
 
         for i, data in enumerate(train_dataloader):
-            inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
+            inputs, labels, patient = data[0].to(DEVICE), data[1].to(DEVICE), data[2]
 
             optimizer.zero_grad()
             outputs = net(inputs)
@@ -62,12 +64,13 @@ try:
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-            print(f"[EPOCH {epoch + 1}] sample: ({i}/{len(train_dataloader)})\t"
+
+            print(f"[EPOCH {epoch + 1}] sample: ({patient})\t"
                   f"combined loss: {loss.item()}\tloss_focal: {loss_focal.item()}\tloss_dice: {loss_dice.item()}")
 
         with torch.no_grad():
             for j, data in enumerate(validation_dataloader):
-                inputs, labels = data[0].to(DEVICE), data[1].to(DEVICE)
+                inputs, labels, patient = data[0].to(DEVICE), data[1].to(DEVICE), data[2]
 
                 outputs = net(inputs)
 

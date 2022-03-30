@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class DiceLoss(nn.Module):
@@ -8,10 +7,11 @@ class DiceLoss(nn.Module):
         super().__init__()
         self.c = channels
 
-    def forward(self, inputs, targets, smooth=1):
+    def forward(self, inputs, targets):
+
         intersection = torch.mul(inputs, targets).sum([2, 3, 4])
-        dice = (2. * intersection) / (inputs.sum([2, 3, 4]) + targets.sum([2, 3, 4]) + smooth)
-        dice = dice.sum() / self.c
+        dice = (2. * intersection) / (inputs.sum([2, 3, 4]) + targets.sum([2, 3, 4]))
+        dice = dice.sum() / (self.c * inputs.shape[0])
 
         return 1 - dice
 
@@ -24,19 +24,27 @@ class FocalLoss(nn.Module):
         self.alpha = alpha.to(DEVICE)
         self.n = shape[2] * shape[3] * shape[4]
 
-    def forward(self, inputs, targets):
-        focal_loss = self.alpha * ((1. - inputs) ** self.gamma) * (targets * torch.log(inputs + 1e-7))
 
-        return - (focal_loss.sum() / self.n)
+    def forward(self, inputs, targets):
+        focal_loss = self.alpha * ((1. - inputs) ** self.gamma) * (targets * torch.log(inputs + 1e-10))
+        focal_loss = focal_loss.sum(dim=1).sum([1, 2, 3]) / self.n
+        return - (focal_loss.sum() / inputs.shape[0])
 
 
 if __name__ == "__main__":
     ALPHA = torch.tensor([1, 1, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]).reshape(1, 10, 1, 1, 1)
     GAMMA = 2
-    f = FocalLoss(GAMMA, ALPHA)
 
+    f = FocalLoss(GAMMA, ALPHA, shape=(2, 10, 256, 256, 48))
     d = DiceLoss()
-    a = torch.rand(2, 10, 15, 15, 5) * 50
-    b = torch.ones(2, 10, 15, 15, 5)
-    print(f(a, b))
-    print(f(b, b))
+
+    a = torch.zeros(2, 10, 256, 256, 48)
+    b = torch.ones(2, 10, 256, 256, 48)
+
+    for i in range(10):
+        print(d(a + 0.1 * i, b))
+
+    for i in range(10):
+        print(f(a + 0.1 * i, b))
+
+
