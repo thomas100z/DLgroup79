@@ -1,5 +1,4 @@
-import os
-
+import os, sys
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 import torch.optim as optim
@@ -12,21 +11,20 @@ import torch
 EPOCH = 100
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 OUT_CHANNEL = 10
-LOAD_PATH = None #'models/30-21:46-OrganNet.pth'
+LOAD_PATH = sys.argv[1] if sys.argv[1] else None
 ALPHA = torch.tensor([0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape(1,10,1,1,1)
 GAMMA = 2
 BATCH_SIZE = 2
 
 # get the data from the dataloader, paper: batch size = 2
-load_data_set = True if 'trainimages.pickle' in os.listdir('data') else False
-training_data = MICCAI('train', load=load_data_set)
+load_train_set = True if 'train.pickle' in os.listdir('data') else False
+training_data = MICCAI('train', load=load_train_set)
 
-train_size = int(0.95 * len(training_data))
-val_size = len(training_data) - train_size
-train_dataset, val_dataset = torch.utils.data.random_split(training_data, [train_size, val_size])
+load_val_data = True if 'train_additional.pickle' in os.listdir('data') else False
+validation_data = MICCAI('train_additional', load=load_val_data)
 
-train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-validation_dataloader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=True)
+train_dataloader = DataLoader(training_data, batch_size=BATCH_SIZE, shuffle=True)
+validation_dataloader = DataLoader(validation_data, batch_size=BATCH_SIZE, shuffle=True)
 
 # OrganNet model
 net = OrganNet(OUT_CHANNEL).to(DEVICE)

@@ -30,8 +30,9 @@ optimizer = optim.Adam(net.parameters(), lr=0.001)
 net.load_checkpoint(LOAD_PATH, optimizer, 0.001)
 
 # load data
-load_data_set = True if 'train_additionalimages.pickle' in os.listdir('data') else False
-test_dataloader = DataLoader(MICCAI('train_additional', load=load_data_set), batch_size=1, shuffle=True)
+dset = 'test_offsite'
+load_data_set = True if dset + '.pickle' in os.listdir('data') else False
+test_dataloader = DataLoader(MICCAI(dset, load=load_data_set), batch_size=1, shuffle=True)
 
 # focal loss + dice loss
 criterion_focal = FocalLoss(GAMMA, ALPHA)

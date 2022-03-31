@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from collections import Counter
 
 class DiceLoss(nn.Module):
     def __init__(self, channels=10):
@@ -8,7 +8,6 @@ class DiceLoss(nn.Module):
         self.c = channels
 
     def forward(self, inputs, targets):
-
         intersection = torch.mul(inputs, targets).sum([2, 3, 4])
         dice = (2. * intersection) / (inputs.sum([2, 3, 4]) + targets.sum([2, 3, 4]))
         dice = dice.sum() / (self.c * inputs.shape[0])
@@ -24,9 +23,9 @@ class FocalLoss(nn.Module):
         self.alpha = alpha.to(DEVICE)
         self.n = shape[2] * shape[3] * shape[4]
 
-
     def forward(self, inputs, targets):
-        focal_loss = self.alpha * ((1. - inputs) ** self.gamma) * (targets * torch.log(inputs + 1e-10))
+        # inputs = torch.round(inputs)
+        focal_loss = self.alpha * torch.pow((1. - inputs), self.gamma) * (targets * torch.log(inputs + 1e-7))
         focal_loss = focal_loss.sum(dim=1).sum([1, 2, 3]) / self.n
         return - (focal_loss.sum() / inputs.shape[0])
 
@@ -46,5 +45,3 @@ if __name__ == "__main__":
 
     for i in range(10):
         print(f(a + 0.1 * i, b))
-
-
