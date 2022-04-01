@@ -9,7 +9,7 @@ import sys, os
 
 # load model
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-LOAD_PATH = sys.argv[1] if sys.argv[1] else 'models/29-14:44-OrganNet.pth'
+LOAD_PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join('models',os.listdir('models')[-1])
 ALPHA = torch.tensor([0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape(1, 10, 1, 1, 1)
 GAMMA = 2
 organs = [
@@ -21,7 +21,7 @@ organs = [
     'Opt. Ner. R',
     'Parotid L',
     'Parotid R',
-    'Parotid R',
+    'Subman. L',
     'Subman. R'
 ]
 
@@ -86,6 +86,9 @@ for i, organ in enumerate(DSC.items()):
     DSC_avg[str(i)] = sum(organ[1]) / len(organ[1])
 
 for i, (k, v) in enumerate(DSC_avg.items()):
-    print("Organ:", organs[i], 'DSC:', round(v,1))
+    print("Organ:", k ,organs[i], 'DSC:', round(v,1))
 
 print('DSC AVERAGE = ', round((sum(DSC_avg.values()) / len(DSC_avg)), 1))
+
+# for k, v in DSC.items():
+#     print(organs[int(k)], v)
