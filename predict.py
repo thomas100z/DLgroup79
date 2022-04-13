@@ -53,6 +53,7 @@ def dice_score(inputs, targets):
     inputs = torch.empty(c, h, w, d)
     for i in range(c):
         inputs[i] = torch.where(c_max_input == i, 1, 0)
+
     inputs = inputs.to(DEVICE)
     intersection = torch.mul(inputs, targets).sum([1, 2, 3])
     dice = (2. * intersection) / (inputs.sum([1, 2, 3]) + targets.sum([1, 2, 3]) + smooth)
@@ -90,5 +91,12 @@ for i, (k, v) in enumerate(DSC_avg.items()):
 
 print('DSC AVERAGE = ', round((sum(DSC_avg.values()) / len(DSC_avg)), 1))
 
-# for k, v in DSC.items():
-#     print(organs[int(k)], v)
+# draw Boxplot
+fig, ax = plt.subplots(1)
+ax.boxplot(DSC.values())
+ax.set_title('Boxplot DSC per Organ', fontsize=14, fontweight='bold')
+ax.set_xticklabels(organs, rotation=25, fontsize=10)
+ax.set_xlabel('Organs')
+ax.set_ylabel('DSC')
+plt.show()
+
