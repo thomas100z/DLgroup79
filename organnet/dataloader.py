@@ -3,8 +3,6 @@ import torchio as tio
 import torch
 import os
 import pickle
-import torchvision.transforms.functional as tf
-import random
 
 
 class MICCAI(Dataset):
@@ -69,15 +67,8 @@ class MICCAI(Dataset):
         return result
 
     def __getitem__(self, index):
-
-        if False : #not self.data_set == 'train_offsite':
-            angle = random.randint(-5, 5)
-            image = tf.rotate(self.images[index], angle)
-            label = tf.rotate(self._encode(self.labels[index]), angle)
-        else:
-            label = self._encode(self.labels[index])
-            image = self.images[index]
-
+        label = self._encode(self.labels[index])
+        image = self.images[index]
         return image, label, self.patients[index]
 
 

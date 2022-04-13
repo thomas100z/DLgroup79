@@ -8,11 +8,11 @@ from datetime import datetime
 from organnet.loss import FocalLoss, DiceLoss
 import torch
 
-EPOCH = 100
+EPOCH = 150
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-OUT_CHANNEL = 10
-LOAD_PATH = sys.argv[1] if sys.argv[1] else None
-ALPHA = torch.tensor([0.5, 1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape(1,10,1,1,1)
+OUT_CHANNEL = 9
+LOAD_PATH = sys.argv[1] if len(sys.argv) > 1 else None
+ALPHA = torch.tensor([1.0, 4.0, 1.0, 4.0, 4.0, 1.0, 1.0, 3.0, 3.0]).reshape(1, OUT_CHANNEL, 1, 1, 1)
 GAMMA = 2
 BATCH_SIZE = 2
 
